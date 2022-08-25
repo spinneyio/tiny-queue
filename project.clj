@@ -1,4 +1,4 @@
-(defproject io.spinney/tiny-queue "1.0.0"
+(defproject io.spinney/tiny-queue "1.0.1"
   :description "A Clojure implementation of message queue that is based on datomic."
   :url "https://github.com/spinneyio/tiny-queue"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"

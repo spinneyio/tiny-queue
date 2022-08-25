@@ -26,7 +26,8 @@
 (s/def ::job (s/keys :req [:db/id]))
 
 (s/def ::status
-  #{:grab/fail :grab/init :grab/success :process/fail :process/success})
+  #{:grab/fail :grab/init :grab/success 
+    :process/fail :process/success :wrap-background-job/fail})
 
 (s/def ::exception (s/with-gen
                      #(instance? java.lang.Throwable %)
@@ -43,6 +44,11 @@
 (defmethod log-params :process/fail [_]
   (s/keys :req-un [::job
                    ::status
+                   ::processor-uuid
+                   ::exception]))
+
+(defmethod log-params :wrap-background-job/fail [_]
+  (s/keys :req-un [::status
                    ::processor-uuid
                    ::exception]))
 

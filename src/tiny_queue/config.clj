@@ -32,6 +32,10 @@
           (-> log-params :processor-uuid)
           (-> log-params :job :db/id)))
 
+(defmethod default-log :wrap-background-job/fail [log-params]
+  (format "Exception %s in wrap-background-job!!!!"
+          (some-> log-params :exception u/exception-description)))
+
 (defmethod default-log :default [log-params]
   (format "Processor: %s, job: %s, state: %s"
           (-> log-params :processor-uuid)
