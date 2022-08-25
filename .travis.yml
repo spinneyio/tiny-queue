@@ -1,0 +1,7 @@
+language: clojure
+jobs:
+  include:
+  - stage: test
+    script: lein test
+stages:
+- test
