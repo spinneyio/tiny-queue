@@ -24,7 +24,7 @@
      (not [?message :qmessage/blocked true])]
    snapshot (java.util.Date.)))
 
-(defn get-single-unprocessed-command-job
+(defn get-single-unprocessed-future-command-job
   [config snapshot command]
   ((:q config)
    '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}]) .
@@ -33,7 +33,7 @@
      [?message :qmessage/status :qmessage-status/unprocessed]
      [?message :qmessage/qcommand ?command]
      [?message :qmessage/execution-date ?ex-date]
-     [(.after ^java.util.Date ?current-date ?ex-date)]
+     [(.after ^java.util.Date ?ex-date ?current-date)]
      (not [?message :qmessage/blocked true])]
    snapshot command (java.util.Date.)))
 
