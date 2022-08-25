@@ -2,7 +2,7 @@
   (:require [clj-time.core :as time]
             [tiny-queue.utils :as u]))
 
-(defn get-limbo
+(defn get-limbo-jobs
   [config database]
   (let [{:keys [q max-process-job-time]} config
         minimum-start (-> (time/now)

@@ -4,8 +4,7 @@
             [tiny-queue.db.query :as db-query]
             [tiny-queue.db.schema :as db-schema]
             [clj-time.core :as time]
-            [tiny-queue.utils :as u])
-  (:gen-class))
+            [tiny-queue.utils :as u]))
 
 (defn create-schema [config]
   @((:transact config) (:conn config) db-schema/qmessage-schema))
