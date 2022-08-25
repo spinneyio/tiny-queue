@@ -80,7 +80,7 @@
   (let [{:keys [conn
                 processor-uuid
                 log
-                job-processor-failed-interval
+                job-processor-failed-interval-in-s
                 tiny-queue-processors
                 transact]} config
         processor (-> job
@@ -105,12 +105,14 @@
                 :processor-uuid processor-uuid
                 :exception e
                 :status :process/fail}))
-        @(transact (db-transaction/fail-transaction
-                    job
-                    processor-uuid
-                    (time/now)
-                    (u/exception-description e)
-                    job-processor-failed-interval))))))
+        @(transact
+          conn
+          (db-transaction/fail-transaction
+           job
+           processor-uuid
+           (time/now)
+           (u/exception-description e)
+           job-processor-failed-interval-in-s))))))
 
 (defn grab-process-job [config snapshot job]
   (when (grab-job config job)
@@ -123,7 +125,7 @@
                  config)
         {:keys [conn
                 processor-uuid
-                original-interval
+                original-interval-in-ns
                 db
                 log]} config
         sleep-nans #(Thread/sleep (unchecked-divide-int % (int 1e3)) (mod % 1e3))
@@ -145,5 +147,5 @@
           remaining-subtracted (- remaining-time (- end-time start-time))
           remaining-final (if (> remaining-subtracted 0)
                             remaining-subtracted
-                            original-interval)]
+                            original-interval-in-ns)]
       (recur config remaining-final))))

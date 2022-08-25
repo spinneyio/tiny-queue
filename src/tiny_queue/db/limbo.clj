@@ -4,9 +4,9 @@
 
 (defn get-limbo-jobs
   [config database]
-  (let [{:keys [q max-process-job-time]} config
+  (let [{:keys [q max-process-job-time-in-s]} config
         minimum-start (-> (time/now)
-                          (time/minus (time/seconds max-process-job-time))
+                          (time/minus (time/seconds max-process-job-time-in-s))
                           u/to-database-date)]
     (q '[:find [(pull ?message [:* {:qmessage/qcommand [:db/ident]}]) ...]
          :in $ ?minimum-start
