@@ -1,7 +1,6 @@
-# tiny-queue
-
-A Clojure library that implements message queue with Datomic. 
-
+# tiny-queue 
+A Clojure library that implements message queue with Datomic. <br> <br>
+[![Build Status](https://app.travis-ci.com/spinneyio/tiny-queue.svg?branch=master)](https://app.travis-ci.com/spinneyio/tiny-queue)
 ## Installation
 
 Leiningen coordinates:
