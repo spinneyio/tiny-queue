@@ -79,6 +79,18 @@
      [?message :qmessage/qcommand ?command]]
    snapshot object command))
 
+(defn get-all-command-job-ids-from-start-date-with-object
+  [config snapshot object command start-date]
+  ((:q config)
+   '[:find [?message ...]
+     :in $ ?object ?command ?start-date
+     :where
+     [?message :qmessage/object ?object]
+     [?message :qmessage/qcommand ?command ?t]
+     [?t :db/txInstant ?date]
+     [(<= ?start-date ?date)]]
+   snapshot object command start-date))
+
 (defn count-command-jobs [config snapshot command]
   (or ((:q config)
        '[:find (count ?message) .
