@@ -1,14 +1,7 @@
 (ns tiny-queue.spec
-  (:require [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]))
+  (:require [clojure.spec.alpha :as s]))
 
-(defn- string-uuid? [string]
-  (try (-> string java.util.UUID/fromString uuid?)
-       (catch Exception _ false)))
-
-(s/def ::processor-uuid
-  (s/with-gen (s/and string? string-uuid?)
-              #(gen/fmap str (s/gen uuid?))))
+(s/def ::processor-uuid uuid?)
 
 (s/def ::original-interval-in-ns
   (s/and integer? #(> % 0)))

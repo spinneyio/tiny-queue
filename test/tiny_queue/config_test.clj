@@ -24,7 +24,7 @@
                              :q (constantly nil)
                              :transact (constantly nil)
                              :tiny-queue-processors {}
-                             :processor-uuid (str (java.util.UUID/randomUUID))
+                             :processor-uuid (java.util.UUID/randomUUID)
                              :job-processor-failed-interval-in-s 5
                              :max-process-job-time-in-s 13
                              :original-interval-in-ns 17

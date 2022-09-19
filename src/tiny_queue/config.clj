@@ -43,7 +43,7 @@
           (-> log-params :status)))
 
 (defn get-default-config []
-  {:processor-uuid (str (java.util.UUID/randomUUID))
+  {:processor-uuid (java.util.UUID/randomUUID)
    :job-processor-failed-interval-in-s 120
    :max-process-job-time-in-s 300
    :original-interval-in-ns 5000000
