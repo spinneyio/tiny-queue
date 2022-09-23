@@ -16,8 +16,7 @@
   (or (:qmessage/exponential-backoff-factor job) 0))
 
 (defn associated-id [job]
-  (let [object (:qmessage/object job)]
-    (or (:db/id object) object)))
+  (:qmessage/object-id job))
 
 (defn data-from-job [job]
   (if (string? (:qmessage/data job))
@@ -33,7 +32,7 @@
     (-> job
         (cond-> periodic (assoc :qmessage/periodic periodic))
         (cond-> blocked (assoc :qmessage/blocked blocked))
-        (cond-> object (assoc :qmessage/object object)))))
+        (cond-> object (assoc :qmessage/object-id object)))))
 
 (defn create-new-job
   [config job-params]
