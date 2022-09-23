@@ -5,7 +5,7 @@ A Clojure library that implements message queue with Datomic. <br> <br>
 
 Leiningen coordinates:
 ```clojure
-[io.spinney/tiny-queue "1.0.7"]
+[io.spinney/tiny-queue "1.0.8"]
 ```
 
 ## Usage
@@ -61,7 +61,7 @@ To start message queue You should do following steps:
 (require '[tiny-queue.core :as tq])
 (def final-config (assoc config :tiny-queue-processors tiny-queue-processors))
 (def background-processor (atom nil))
-(reset! background-processor (future (wrap-background-job final-config 0)))
+(reset! background-processor (future (tq/wrap-background-job final-config 0)))
 ```
 7. Add new job to the tiny-queue:
 ```clojure

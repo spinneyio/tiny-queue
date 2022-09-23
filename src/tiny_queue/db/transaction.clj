@@ -5,18 +5,18 @@
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
         retry-date (u/get-retry-date fail-time time-increment backoff-factor)
         id (:db/id job)]
-    [[:db.fn/cas id :qmessage/success nil false]
-     [:db.fn/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
-     [:db.fn/cas id :qmessage/processor-uuid processor-id processor-id]
-     [:db.fn/cas id :qmessage/result nil (u/result->string result)]
+    [[:db/cas id :qmessage/success nil false]
+     [:db/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
+     [:db/cas id :qmessage/processor-uuid processor-id processor-id]
+     [:db/cas id :qmessage/result nil (u/result->string result)]
      [:db/add    id :qmessage/exponential-backoff-factor (+ 1 backoff-factor)]
      [:db/add    id :qmessage/retry-date retry-date]
      [:db/add    id :qmessage/status :qmessage-status/failed]]))
 
 (defn grab-unprocessed-job-transaction [job processor-uuid start-time]
   (let [id (:db/id job)]
-   [[:db.fn/cas id :qmessage/processor-uuid nil processor-uuid]
-    [:db.fn/cas id :qmessage/started-processing-at nil (u/to-database-date start-time)]
+   [[:db/cas id :qmessage/processor-uuid nil processor-uuid]
+    [:db/cas id :qmessage/started-processing-at nil (u/to-database-date start-time)]
     [:db/add    id :qmessage/status :qmessage-status/pending]]))
 
 (defn grab-failed-job-transaction [job processor-uuid start-time]
@@ -28,9 +28,9 @@
         orig-processed (:qmessage/processed-at job)
         orig-result (:qmessage/result job)
         orig-retry  (:qmessage/retry-date job)]
-    [[:db.fn/cas id :qmessage/processor-uuid orig-uuid processor-uuid]
+    [[:db/cas id :qmessage/processor-uuid orig-uuid processor-uuid]
      [:db/retract id :qmessage/success false]
-     [:db.fn/cas id :qmessage/started-processing-at orig-time (u/to-database-date start-time)]
+     [:db/cas id :qmessage/started-processing-at orig-time (u/to-database-date start-time)]
      [:db/add id :qmessage/status :qmessage-status/pending]
      [:db/retract id :qmessage/processed-at orig-processed]
      [:db/retract id :qmessage/result orig-result]
@@ -38,8 +38,8 @@
 
 (defn success-transaction [job processor-id success-time result]
   (let [id (:db/id job)]
-   [[:db.fn/cas id :qmessage/success nil true]
-    [:db.fn/cas id :qmessage/processed-at nil (u/to-database-date success-time)]
-    [:db.fn/cas id :qmessage/processor-uuid processor-id processor-id]
-    [:db.fn/cas id :qmessage/result nil (u/result->string result)]
+   [[:db/cas id :qmessage/success nil true]
+    [:db/cas id :qmessage/processed-at nil (u/to-database-date success-time)]
+    [:db/cas id :qmessage/processor-uuid processor-id processor-id]
+    [:db/cas id :qmessage/result nil (u/result->string result)]
     [:db/add    id :qmessage/status :qmessage-status/succeeded]]))
