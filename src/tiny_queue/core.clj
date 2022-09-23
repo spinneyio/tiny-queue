@@ -105,8 +105,8 @@
             final-tiny-queue-db-transaction (concat
                                              tiny-queue-db-transaction
                                              success-transaction)]
-        (transact tiny-queue-db-conn final-tiny-queue-db-transaction)
-        (transact object-db-conn object-db-transaction))
+        (transact object-db-conn object-db-transaction)
+        (transact tiny-queue-db-conn final-tiny-queue-db-transaction))
       (when log
         (log {:job job
               :processor-uuid processor-uuid
