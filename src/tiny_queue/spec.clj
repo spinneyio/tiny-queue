@@ -58,14 +58,17 @@
 
 (s/def ::q any?)
 
-(s/def ::conn any?)
+(s/def ::object-db-conn any?)
+
+(s/def ::tiny-queue-db-conn any?)
 
 (s/def ::db any?)
 
 (s/def ::transact any?)
 
 (s/def ::config
-  (s/keys :req-un [::conn
+  (s/keys :req-un [::object-db-conn
+                   ::tiny-queue-db-conn
                    ::q
                    ::db
                    ::transact
