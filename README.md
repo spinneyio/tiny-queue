@@ -5,7 +5,7 @@ A Clojure library that implements message queue with Datomic. <br> <br>
 
 Leiningen coordinates:
 ```clojure
-[io.spinney/tiny-queue "1.0.5"]
+[io.spinney/tiny-queue "1.0.6"]
 ```
 
 ## Usage
@@ -30,7 +30,8 @@ To start message queue You should do following steps:
 (require '[datomic.api :as d])
 (def conn (d/connect "your-datomic-db-uri"))
 (def config 
-  {:conn conn
+  {:object-db-conn conn
+   :tiny-queue-db-conn conn
    :q d/q
    :db d/db
    :transact d/transact-async
@@ -46,7 +47,7 @@ To start message queue You should do following steps:
 ```
 4. Define first job processor (processor should return Datomic transaction):
 ```clojure
-(defn first-job-processor [[snapshot job uuid]]
+(defn first-job-processor [tiny-queue-db-snapshot object-db-snapshot job uuid]
   (println "Processing first job" uuid)
   [])
 ```

@@ -7,7 +7,7 @@
             [tiny-queue.utils :as u]))
 
 (defn create-schema [config]
-  @((:transact config) (:conn config) db-schema/qmessage-schema))
+  ((:transact config) (:tiny-queue-db-conn config) db-schema/qmessage-schema))
 
 (defn failed? [job]
   (= false (:qmessage/success job)))
@@ -16,8 +16,7 @@
   (or (:qmessage/exponential-backoff-factor job) 0))
 
 (defn associated-id [job]
-  (let [object (:qmessage/object job)]
-    (or (:db/id object) object)))
+  (:qmessage/object-id job))
 
 (defn data-from-job [job]
   (if (string? (:qmessage/data job))
@@ -33,20 +32,20 @@
     (-> job
         (cond-> periodic (assoc :qmessage/periodic periodic))
         (cond-> blocked (assoc :qmessage/blocked blocked))
-        (cond-> object (assoc :qmessage/object object)))))
+        (cond-> object (assoc :qmessage/object-id object)))))
 
 (defn create-new-job
   [config job-params]
-  @((:transact config) (:conn config) [(get-new-job job-params)]))
+  ((:transact config) (:tiny-queue-db-conn config) [(get-new-job job-params)]))
 
-(defn define-new-job 
+(defn define-new-job
   [config job-ident job-docs]
   (let [job-schema [{:db/ident job-ident
                      :db/doc   job-docs}]]
-   @((:transact config) (:conn config) job-schema)))
+    ((:transact config) (:tiny-queue-db-conn config) job-schema)))
 
 (defn grab-job [config job]
-  (let [{:keys [conn
+  (let [{:keys [tiny-queue-db-conn
                 processor-uuid
                 transact
                 log]} config
@@ -59,7 +58,7 @@
         (log {:job job
               :processor-uuid processor-uuid
               :status :grab/init}))
-      @(transact conn grab-job-transaction)
+      (transact tiny-queue-db-conn grab-job-transaction)
       (when log
         (log {:job job
               :processor-uuid processor-uuid
@@ -76,8 +75,9 @@
 (defn process-job
   "A job is a function that does not perform any transactions. Instead, 
    it returns a transaction to be performed. This limitation is intentional."
-  [config snapshot job]
-  (let [{:keys [conn
+  [config tiny-queue-db-snapshot object-db-snapshot job]
+  (let [{:keys [tiny-queue-db-conn
+                object-db-conn
                 processor-uuid
                 log
                 job-processor-failed-interval-in-s
@@ -89,12 +89,21 @@
                       tiny-queue-processors)]
     (assert processor "No processor found!")
     (try
-      (let [result (processor snapshot job processor-uuid)
+      (let [{:keys [object-db-transaction tiny-queue-db-transaction]} (processor
+                                                                       tiny-queue-db-snapshot
+                                                                       object-db-snapshot
+                                                                       job
+                                                                       processor-uuid)
             success-transaction (db-transaction/success-transaction
                                  job
                                  processor-uuid
-                                 (time/now) "OK")]
-        @(transact conn (concat result success-transaction)))
+                                 (time/now)
+                                 "OK")
+            final-tiny-queue-db-transaction (concat
+                                             tiny-queue-db-transaction
+                                             success-transaction)]
+        (transact tiny-queue-db-conn final-tiny-queue-db-transaction)
+        (transact object-db-conn object-db-transaction))
       (when log
         (log {:job job
               :processor-uuid processor-uuid
@@ -105,25 +114,26 @@
                 :processor-uuid processor-uuid
                 :exception e
                 :status :process/fail}))
-        @(transact
-          conn
-          (db-transaction/fail-transaction
-           job
-           processor-uuid
-           (time/now)
-           (u/exception-description e)
-           job-processor-failed-interval-in-s))))))
+        (transact
+         tiny-queue-db-conn
+         (db-transaction/fail-transaction
+          job
+          processor-uuid
+          (time/now)
+          (u/exception-description e)
+          job-processor-failed-interval-in-s))))))
 
-(defn grab-process-job [config snapshot job]
+(defn grab-process-job [config tiny-queue-db-snapshot object-db-snapshot job]
   (when (grab-job config job)
-    (process-job config snapshot job)))
+    (process-job config tiny-queue-db-snapshot object-db-snapshot job)))
 
 (defn wrap-background-job
   [config ^Long remaining-time]
   (let [config (if (not (:validated? config))
                  (config/check-config config)
                  config)
-        {:keys [conn
+        {:keys [tiny-queue-db-conn
+                object-db-conn
                 processor-uuid
                 original-interval-in-ns
                 db
@@ -131,11 +141,12 @@
         sleep-nans #(Thread/sleep (unchecked-divide-int % (int 1e3)) (mod % 1e3))
         start-time (System/nanoTime)]
     (try
-      (let [snapshot (db conn)
-            unprocessed-job (or (db-query/get-single-unprocessed-job config snapshot)
-                                (db-query/get-single-failed-job config snapshot))]
+      (let [tiny-queue-db-snapshot (db tiny-queue-db-conn)
+            object-db-snapshot (db object-db-conn)
+            unprocessed-job (or (db-query/get-single-unprocessed-job config tiny-queue-db-snapshot)
+                                (db-query/get-single-failed-job config tiny-queue-db-snapshot))]
         (if (and (> remaining-time 0) unprocessed-job)
-          (grab-process-job config snapshot unprocessed-job)
+          (grab-process-job config tiny-queue-db-snapshot object-db-snapshot unprocessed-job)
           (when (> remaining-time 0)
             (sleep-nans remaining-time))))
       (catch Exception e

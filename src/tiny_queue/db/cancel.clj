@@ -1,18 +1,19 @@
 (ns tiny-queue.db.cancel)
 
 (defn get-jobs-from-object [config object snapshot] 
-  ((:q config)
-   '[:find [(pull ?message [:* {:qmessage/qcommand [:db/ident]}]) ...]
-     :in $ ?object ?current-date
-     :where
-     [?message :qmessage/object ?object]
-     (not [?message :qmessage/processed-at])
-     (not [?message :qmessage/started-processing-at])
-     (or-join [?message ?current-date]
-              (not [?message :qmessage/execution-date])
-              (and [?message :qmessage/execution-date ?ex-date]
-                   [(< ?current-date ?ex-date)]))]
-   snapshot object (java.util.Date.)))
+  (map first
+       ((:q config)
+        '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
+          :in $ ?object ?current-date
+          :where
+          [?message :qmessage/object-id ?object]
+          (not [?message :qmessage/processed-at])
+          (not [?message :qmessage/started-processing-at])
+          (or-join [?message ?current-date]
+                   (not [?message :qmessage/execution-date])
+                   (and [?message :qmessage/execution-date ?ex-date]
+                        [(< ?current-date ?ex-date)]))]
+        snapshot object (java.util.Date.))))
 
 (defn- cancel-transaction [job]
   [[:db/retractEntity (:db/id job)]])

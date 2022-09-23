@@ -8,14 +8,15 @@
         minimum-start (-> (time/now)
                           (time/minus (time/seconds max-process-job-time-in-s))
                           u/to-database-date)]
-    (q '[:find [(pull ?message [:* {:qmessage/qcommand [:db/ident]}]) ...]
-         :in $ ?minimum-start
-         :where [?message :qmessage/status :qmessage-status/pending]
-         (not [?message :qmessage/processed-at])
-         (not [?message :qmessage/blocked true])
-         [?message :qmessage/started-processing-at ?start]
-         [(.after ^java.util.Date ?minimum-start ?start)]]
-       database minimum-start)))
+    (map first
+         (q '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
+              :in $ ?minimum-start
+              :where [?message :qmessage/status :qmessage-status/pending]
+              (not [?message :qmessage/processed-at])
+              (not [?message :qmessage/blocked true])
+              [?message :qmessage/started-processing-at ?start]
+              [(.after ^java.util.Date ?minimum-start ?start)]]
+            database minimum-start))))
 
 (defn fix-limbo-transaction [job fail-time processor-uuid time-increment]
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
