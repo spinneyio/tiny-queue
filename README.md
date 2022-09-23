@@ -5,7 +5,7 @@ A Clojure library that implements message queue with Datomic. <br> <br>
 
 Leiningen coordinates:
 ```clojure
-[io.spinney/tiny-queue "1.0.6"]
+[io.spinney/tiny-queue "1.0.7"]
 ```
 
 ## Usage
@@ -13,7 +13,8 @@ Leiningen coordinates:
 The library provides `wrap-background-job` function, which can be used to start the message queue. 
 This function requires your configuration in the form:
 ```clojure 
- {:conn your-datomic-db-connection
+ {:object-db-conn datomic-db-connection
+  :tiny-queue-db-conn datomic-db-connection
   :q d/q
   :db d/db
   :transact d/transact-async

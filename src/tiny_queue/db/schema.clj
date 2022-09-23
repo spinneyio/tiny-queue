@@ -104,6 +104,8 @@
     :db/noHistory          true
     :db/doc                "Confirms that task is (or is not) blocked."}])
 
+(def datomic-cloud-qmessage-schema (mapv #(dissoc % :db/index) qmessage-schema))
+
 (def example-partition-schema
   [{:db/id "tiny-queue"
     :db/ident :tiny-queue}

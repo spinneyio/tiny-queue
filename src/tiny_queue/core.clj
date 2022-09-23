@@ -9,6 +9,9 @@
 (defn create-schema [config]
   ((:transact config) (:tiny-queue-db-conn config) db-schema/qmessage-schema))
 
+(defn create-datomic-cloud-schema [config]
+  ((:transact config) (:tiny-queue-db-conn config) db-schema/datomic-cloud-qmessage-schema))
+
 (defn failed? [job]
   (= false (:qmessage/success job)))
 
