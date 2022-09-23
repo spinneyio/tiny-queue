@@ -36,7 +36,7 @@
     :db/doc                "Object involved"}
    
    {:db/ident              :qmessage/object-id
-    :db/valueType          :db.type/float
+    :db/valueType          :db.type/long
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true
     :db/doc                "Database-unique entity id for an object (stored in an external database: object-db-conn)."}
