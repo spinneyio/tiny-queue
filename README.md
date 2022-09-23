@@ -50,7 +50,8 @@ To start message queue You should do following steps:
 ```clojure
 (defn first-job-processor [tiny-queue-db-snapshot object-db-snapshot job uuid]
   (println "Processing first job" uuid)
-  [])
+  {:object-db-transaction []
+   :tiny-queue-db-transaction []})
 ```
 5. Define proper `tiny-queue-processors`:
 ```clojure
