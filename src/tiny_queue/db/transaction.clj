@@ -5,13 +5,13 @@
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
         retry-date (u/get-retry-date fail-time time-increment backoff-factor)
         id (:db/id job)]
-    [[:db/cas id :qmessage/success nil false]
-     [:db/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
-     [:db/cas id :qmessage/processor-uuid processor-id processor-id]
-     [:db/cas id :qmessage/result nil (u/result->string result)]
-     [:db/add    id :qmessage/exponential-backoff-factor (+ 1 backoff-factor)]
-     [:db/add    id :qmessage/retry-date retry-date]
-     [:db/add    id :qmessage/status :qmessage-status/failed]]))
+    [[:db/add id :qmessage/success nil false]
+     [:db/add id :qmessage/processed-at nil (u/to-database-date fail-time)]
+     [:db/add id :qmessage/processor-uuid processor-id processor-id]
+     [:db/add id :qmessage/result nil (u/result->string result)]
+     [:db/add id :qmessage/exponential-backoff-factor (+ 1 backoff-factor)]
+     [:db/add id :qmessage/retry-date retry-date]
+     [:db/add id :qmessage/status :qmessage-status/failed]]))
 
 (defn grab-unprocessed-job-transaction [job processor-uuid start-time]
   (let [id (:db/id job)]
@@ -38,8 +38,8 @@
 
 (defn success-transaction [job processor-id success-time result]
   (let [id (:db/id job)]
-   [[:db/cas id :qmessage/success nil true]
-    [:db/cas id :qmessage/processed-at nil (u/to-database-date success-time)]
-    [:db/cas id :qmessage/processor-uuid processor-id processor-id]
-    [:db/cas id :qmessage/result nil (u/result->string result)]
-    [:db/add    id :qmessage/status :qmessage-status/succeeded]]))
+   [[:db/add id :qmessage/success nil true]
+    [:db/add id :qmessage/processed-at nil (u/to-database-date success-time)]
+    [:db/add id :qmessage/processor-uuid processor-id processor-id]
+    [:db/add id :qmessage/result nil (u/result->string result)]
+    [:db/add id :qmessage/status :qmessage-status/succeeded]]))
