@@ -6,7 +6,7 @@
         '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
           :in $ ?object ?current-date
           :where
-          [?message :qmessage/object-id ?object]
+          [?message :qmessage/object-uuid ?object]
           (not [?message :qmessage/processed-at])
           (not [?message :qmessage/started-processing-at])
           (or-join [?message ?current-date]

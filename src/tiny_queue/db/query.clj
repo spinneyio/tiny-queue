@@ -82,7 +82,7 @@
         '[:find ?message
           :in $ ?object ?command
           :where
-          [?message :qmessage/object-id ?object]
+          [?message :qmessage/object-uuid ?object]
           [?message :qmessage/qcommand ?command]]
         snapshot object command)))
 
@@ -93,7 +93,7 @@
         '[:find ?message
           :in $ ?object ?command ?start-date
           :where
-          [?message :qmessage/object-id ?object]
+          [?message :qmessage/object-uuid ?object]
           [?message :qmessage/qcommand ?command ?t]
           [?t :db/txInstant ?date]
           [(<= ?start-date ?date)]]

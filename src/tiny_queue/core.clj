@@ -18,8 +18,8 @@
 (defn job-failure-count [job]
   (or (:qmessage/exponential-backoff-factor job) 0))
 
-(defn associated-id [job]
-  (:qmessage/object-id job))
+(defn associated-uuid [job]
+  (:qmessage/object-uuid job))
 
 (defn data-from-job [job]
   (if (string? (:qmessage/data job))
@@ -35,7 +35,7 @@
     (-> job
         (cond-> periodic (assoc :qmessage/periodic periodic))
         (cond-> blocked (assoc :qmessage/blocked blocked))
-        (cond-> object (assoc :qmessage/object-id object)))))
+        (cond-> object (assoc :qmessage/object-uuid object)))))
 
 (defn create-new-job
   [config job-params]

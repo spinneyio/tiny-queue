@@ -41,6 +41,12 @@
     :db/noHistory          true
     :db/doc                "Database-unique entity id for an object (stored in an external database: object-db-conn)."}
 
+   {:db/ident              :qmessage/object-uuid
+    :db/valueType          :db.type/uuid
+    :db/cardinality        :db.cardinality/one
+    :db/noHistory          true
+    :db/doc                "UUID for an object (stored in an external database: object-db-conn)."}
+
    {:db/ident              :qmessage/processed-at
     :db/valueType          :db.type/instant
     :db/cardinality        :db.cardinality/one
