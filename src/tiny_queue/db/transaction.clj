@@ -49,5 +49,5 @@
     [[:db/add id :qmessage/success false]
      [:db/add id :qmessage/processed-at (u/to-database-date fail-time)]
      [:db/add id :qmessage/processor-uuid processor-id]
-     [:db/add id :qmessage/result (prn-str transaction)]
+     [:db/add id :qmessage/result (u/result->string transaction)]
      [:db/add id :qmessage/status :qmessage-status/transaction-failed]]))
