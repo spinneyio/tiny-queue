@@ -46,8 +46,8 @@
 
 (defn transaction-fail-transaction [job processor-id fail-time transaction]
   (let [id (:db/id job)]
-    [[:db/cas id :qmessage/success nil false]
-     [:db/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
-     [:db/cas id :qmessage/processor-uuid processor-id processor-id]
-     [:db/cas id :qmessage/result nil (prn-str transaction)]
+    [[:db/add id :qmessage/success false]
+     [:db/add id :qmessage/processed-at (u/to-database-date fail-time)]
+     [:db/add id :qmessage/processor-uuid processor-id]
+     [:db/add id :qmessage/result (prn-str transaction)]
      [:db/add id :qmessage/status :qmessage-status/transaction-failed]]))
