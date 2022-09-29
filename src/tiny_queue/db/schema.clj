@@ -1,7 +1,9 @@
 (ns tiny-queue.db.schema)
 
 (def qmessage-schema
-  [{:db/ident              :qmessage-status/failed
+  [{:db/ident              :qmessage-status/transaction-failed
+    :db/doc                "The qmessage status"}
+   {:db/ident              :qmessage-status/failed
     :db/doc                "The qmessage status"}
    {:db/ident              :qmessage-status/succeeded
     :db/doc                "The qmessage status"}
