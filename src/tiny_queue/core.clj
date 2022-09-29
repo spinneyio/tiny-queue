@@ -37,9 +37,12 @@
         (cond-> blocked (assoc :qmessage/blocked blocked))
         (cond-> object (assoc :qmessage/object-uuid object)))))
 
+(defn get-new-job-transaction [job-params]
+  [(get-new-job job-params)])
+
 (defn create-new-job
   [config job-params]
-  ((:transact config) (:tiny-queue-db-conn config) [(get-new-job job-params)]))
+  ((:transact config) (:tiny-queue-db-conn config) (get-new-job-transaction job-params)))
 
 (defn define-new-job
   [config job-ident job-docs]
