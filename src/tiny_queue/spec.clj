@@ -12,6 +12,9 @@
 (s/def ::max-process-job-time-in-s
   (s/and integer? #(> % 0)))
 
+(s/def ::retry-count
+  (s/and integer? #(> % 0)))
+
 (s/def ::tiny-queue-processors (s/map-of keyword? fn?))
 
 (s/def :db/id (s/and any? (complement nil?)))
@@ -19,8 +22,13 @@
 (s/def ::job (s/keys :req [:db/id]))
 
 (s/def ::status
-  #{:grab/fail :grab/init :grab/success 
-    :process/fail :process/success :wrap-background-job/fail})
+  #{:grab/init
+    :grab/fail
+    :grab/success
+    :process/transaction-fail
+    :process/fail
+    :process/success
+    :wrap-background-job/fail})
 
 (s/def ::exception (s/with-gen
                      #(instance? java.lang.Throwable %)
@@ -44,6 +52,13 @@
   (s/keys :req-un [::status
                    ::processor-uuid
                    ::exception]))
+
+(defmethod log-params :process/transaction-fail [_]
+  (s/keys :req-un [::job
+                   ::status
+                   ::processor-uuid
+                   ::exception
+                   ::retry-count]))
 
 (defmethod log-params :default [_]
   (s/keys :req-un [::job

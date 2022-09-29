@@ -97,7 +97,8 @@
           (log {:job job
                 :processor-uuid processor-uuid
                 :exception e
-                :status :process/transaction-fail})
+                :status :process/transaction-fail
+                :retry-count retry-count})
           (try-transact
            config
            job
