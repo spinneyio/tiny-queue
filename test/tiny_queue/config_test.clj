@@ -6,7 +6,6 @@
   (testing "Check valid config without optional fields."
     (let [validated-config (config/check-config
                             {:tiny-queue-db-conn "some-connection"
-                             :object-db-conn "some-connection"
                              :db (constantly nil)
                              :q (constantly nil)
                              :transact (constantly nil)
@@ -21,7 +20,6 @@
   (testing "Check valid config with optional fields."
     (let [validated-config (config/check-config
                             {:tiny-queue-db-conn "some-connection"
-                             :object-db-conn "some-connection"
                              :db (constantly nil)
                              :q (constantly nil)
                              :transact (constantly nil)
@@ -42,7 +40,6 @@
     (let [validated-config (try
                              (config/check-config
                               {:tiny-queue-db-conn "some-connection"
-                               :object-db-conn "some-connection"
                                :db (constantly nil)
                                :q (constantly nil)
                                :transact (constantly nil)
