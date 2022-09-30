@@ -78,7 +78,7 @@
                 :status :grab/fail}))
         false))))
 
-(defn try-transact
+(defn- try-transact
   ([config job processor-uuid transaction]
    (try-transact config job processor-uuid transaction 3))
   ([config job processor-uuid transaction retry-count]

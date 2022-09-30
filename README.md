@@ -20,7 +20,15 @@ This function requires your configuration in the form:
   :tiny-queue-processors {}}
 ```
 Where `d` is one of `datomic.api`, `datomic.client.api`. The most important part of the configuration is `tiny-queue-processors`.
-It should be a map with db idents as keys and functions as values.
+It should be a map with db idents as keys and functions as values. Each function should conform to a spec `tiny-queue-processor`.
+
+```clojure
+(s/fdef tiny-queue-processor
+  :args (s/cat :tiny-queue-db-snapshot any?
+               :job map?
+               :processor-uuid uuid?)
+  :ret (s/coll-of #(or (map? %) (vector? %))))
+```
 
 ## Examples
 
