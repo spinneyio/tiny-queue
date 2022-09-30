@@ -9,6 +9,11 @@
 
 (def datomic-uri "datomic:mem://mocked")
 
+(defn job-processor [_tiny-queue-db-snapshot _object-db-snapshot _job uuid]
+  (println "Processing job" uuid)
+  {:object-db-transaction []
+   :tiny-queue-db-transaction []})
+
 (defn get-default-test-config [conn]
   {:object-db-conn conn
    :tiny-queue-db-conn conn
@@ -16,7 +21,7 @@
    :db d/db
    :transact (fn [conn transaction]
                @(d/transact conn transaction))
-   :tiny-queue-processors {}
+   :tiny-queue-processors {:qcommand/job job-processor}
    :processor-uuid (java.util.UUID/randomUUID)
    :job-processor-failed-interval-in-s 120
    :max-process-job-time-in-s 300
@@ -26,22 +31,62 @@
 (defn setup-test-environment [f]
   (let [conn (do (d/create-database datomic-uri)
                  (d/connect datomic-uri))
-        config (get-default-test-config conn)
-        _ (tq/create-schema config)]
+        config (get-default-test-config conn)]
+    (tq/create-schema config)
+    (tq/define-new-job config :qcommand/job "Job")
     (f)
     (d/delete-database datomic-uri)))
 
 (use-fixtures :each setup-test-environment)
 
+(deftest grab-process-job 
+  (let [conn (d/connect datomic-uri)
+        processors {:qcommand/job job-processor}
+        config (-> conn
+                   get-default-test-config
+                   (assoc :tiny-queue-processors processors))] 
+    (testing "Add first job"
+      (let [five-minutes-before (-> (time/now)
+                                    (time/minus (time/minutes 5))
+                                    u/to-database-date)]
+        (tq/create-new-job
+         config
+         {:command :qcommand/job
+          :data {:sample "sample-data"}
+          :date five-minutes-before})))
+    
+    (testing "Grab job"
+      (let [db-with-job (d/db conn)
+            job (tq-query/get-single-unprocessed-job config db-with-job)
+            grab-result (tq/grab-job config job)]
+        (is grab-result)))
+    
+    (testing "Check db with grabbed job"
+      (let [db-with-grabbed-job (d/db conn)]
+        (is (nil? (tq-query/get-single-unprocessed-job config db-with-grabbed-job)))
+        (is (tq-query/get-single-status-job config db-with-grabbed-job :qmessage-status/pending))))
+    
+    (testing "Process job"
+      (let [db-with-grabbed-job (d/db conn)
+            grabbed-job (tq-query/get-single-status-job
+                         config
+                         db-with-grabbed-job
+                         :qmessage-status/pending)]
+       (tq/process-job
+        config
+        db-with-grabbed-job
+        db-with-grabbed-job
+        grabbed-job)))
+    
+    (testing "Check db with completed job"
+      (let [db-with-completed-job (d/db conn)]
+        (is (nil? (tq-query/get-single-unprocessed-job config db-with-completed-job)))
+        (is (nil? (tq-query/get-single-status-job config db-with-completed-job :qmessage-status/pending)))
+        (is (tq-query/get-single-status-job config db-with-completed-job :qmessage-status/succeeded))))))
+
 (deftest successful-job-processing
   (let [conn (d/connect datomic-uri)
         config (get-default-test-config conn)]
-    (testing "Define first job"
-      (tq/define-new-job
-        config
-        :qcommand/send-confirmation-email
-        "Command to send confirmation email."))
-
     (testing "Check empty db"
       (let [empty-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config empty-db))))
@@ -56,7 +101,7 @@
                                     u/to-database-date)]
         (tq/create-new-job
          config
-         {:command :qcommand/send-confirmation-email
+         {:command :qcommand/job
           :data {:sample "sample-data"}
           :date five-minutes-before})))
 
@@ -111,12 +156,6 @@
 (deftest unsuccessful-job-processing
   (let [conn (d/connect datomic-uri)
         config (get-default-test-config conn)]
-    (testing "Define first job"
-      (tq/define-new-job
-        config
-        :qcommand/send-confirmation-email
-        "Command to send confirmation email."))
-
     (testing "Check empty db"
       (let [empty-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config empty-db))))
@@ -131,7 +170,7 @@
                                     u/to-database-date)]
         (tq/create-new-job
          config
-         {:command :qcommand/send-confirmation-email
+         {:command :qcommand/job
           :data {:sample "sample-data"}
           :date five-minutes-before})))
 
@@ -193,7 +232,7 @@
                                          (:processor-uuid config)
                                          (time/now))]
         @(d/transact conn grab-failed-job-transaction)))
-    
+
     (testing "Check db with grabbed job"
       (let [failure-grabbed-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config  failure-grabbed-db))))
