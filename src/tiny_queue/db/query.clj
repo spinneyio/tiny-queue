@@ -26,6 +26,17 @@
       (not [?message :qmessage/blocked true])]
     snapshot (java.util.Date.))))
 
+(defn get-single-status-job
+  [config snapshot status]
+  (ffirst
+   ((:q config)
+    '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
+      :in $ ?status
+      :where
+      [?message :qmessage/status ?status]
+      (not [?message :qmessage/blocked true])]
+    snapshot status)))
+
 (defn get-single-unprocessed-future-command-job
   [config snapshot command]
   (ffirst
