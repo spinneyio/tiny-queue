@@ -13,15 +13,22 @@ Leiningen coordinates:
 The library provides `wrap-background-job` function, which can be used to start the message queue. 
 This function requires your configuration in the form:
 ```clojure 
- {:object-db-conn datomic-db-connection
-  :tiny-queue-db-conn datomic-db-connection
+ {:tiny-queue-db-conn datomic-db-connection
   :q d/q
   :db d/db
   :transact d/transact-async
   :tiny-queue-processors {}}
 ```
 Where `d` is one of `datomic.api`, `datomic.client.api`. The most important part of the configuration is `tiny-queue-processors`.
-It should be a map with db idents as keys and functions as values.
+It should be a map with db idents as keys and functions as values. Each function should conform to a spec `tiny-queue-processor`.
+
+```clojure
+(s/fdef tiny-queue-processor
+  :args (s/cat :tiny-queue-db-snapshot any?
+               :job map?
+               :processor-uuid uuid?)
+  :ret (s/coll-of #(or (map? %) (vector? %))))
+```
 
 ## Examples
 
@@ -31,8 +38,7 @@ To start message queue You should do following steps:
 (require '[datomic.api :as d])
 (def conn (d/connect "your-datomic-db-uri"))
 (def config 
-  {:object-db-conn conn
-   :tiny-queue-db-conn conn
+  {:tiny-queue-db-conn conn
    :q d/q
    :db d/db
    :transact d/transact-async
@@ -48,10 +54,9 @@ To start message queue You should do following steps:
 ```
 4. Define first job processor (processor should return Datomic transaction):
 ```clojure
-(defn first-job-processor [tiny-queue-db-snapshot object-db-snapshot job uuid]
+(defn first-job-processor [tiny-queue-db-snapshot job uuid]
   (println "Processing first job" uuid)
-  {:object-db-transaction []
-   :tiny-queue-db-transaction []})
+  [])
 ```
 5. Define proper `tiny-queue-processors`:
 ```clojure

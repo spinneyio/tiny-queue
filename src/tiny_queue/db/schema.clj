@@ -1,7 +1,9 @@
 (ns tiny-queue.db.schema)
 
 (def qmessage-schema
-  [{:db/ident              :qmessage-status/failed
+  [{:db/ident              :qmessage-status/transaction-failed
+    :db/doc                "The qmessage status"}
+   {:db/ident              :qmessage-status/failed
     :db/doc                "The qmessage status"}
    {:db/ident              :qmessage-status/succeeded
     :db/doc                "The qmessage status"}
@@ -39,13 +41,13 @@
     :db/valueType          :db.type/long
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true
-    :db/doc                "Database-unique entity id for an object (stored in an external database: object-db-conn)."}
+    :db/doc                "Database-unique entity id for an object (stored in an external database)."}
 
    {:db/ident              :qmessage/object-uuid
     :db/valueType          :db.type/uuid
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true
-    :db/doc                "UUID for an object (stored in an external database: object-db-conn)."}
+    :db/doc                "UUID for an object (stored in an external database)."}
 
    {:db/ident              :qmessage/processed-at
     :db/valueType          :db.type/instant
