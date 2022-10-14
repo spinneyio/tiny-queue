@@ -9,14 +9,12 @@
 
 (def datomic-uri "datomic:mem://mocked")
 
-(defn job-processor [_tiny-queue-db-snapshot _object-db-snapshot _job uuid]
+(defn job-processor [_tiny-queue-db-snapshot _job uuid]
   (println "Processing job" uuid)
-  {:object-db-transaction []
-   :tiny-queue-db-transaction []})
+  [])
 
 (defn get-default-test-config [conn]
-  {:object-db-conn conn
-   :tiny-queue-db-conn conn
+  {:tiny-queue-db-conn conn
    :q d/q
    :db d/db
    :transact (fn [conn transaction]
@@ -73,8 +71,7 @@
                          db-with-grabbed-job
                          :qmessage-status/pending)]
        (tq/process-job
-        config
-        db-with-grabbed-job
+        config 
         db-with-grabbed-job
         grabbed-job)))
     
