@@ -8,4 +8,5 @@
                  [org.clojure/math.numeric-tower "0.0.5"]
                  [org.clojure/test.check "1.1.1"]
                  [clj-time "0.15.2"]]
+  :profiles {:test {:dependencies [[com.datomic/datomic-free "0.9.5697"]]}}
   :repl-options {:init-ns tiny-queue.core})
