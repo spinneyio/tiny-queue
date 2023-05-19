@@ -9,7 +9,7 @@
       :where
       [?message :qmessage/status :qmessage-status/unprocessed]
       [?message :qmessage/execution-date ?ex-date]
-      [(.after ^java.util.Date ?current-date ?ex-date)]
+      [(>= ?current-date ?ex-date)]
       (not [?message :qmessage/blocked true])]
     snapshot (java.util.Date.))))
 
@@ -22,7 +22,7 @@
       :where
       [?message :qmessage/status :qmessage-status/failed]
       [?message :qmessage/retry-date ?rdate]
-      [(.after ^java.util.Date ?current-date ?rdate)]
+      [(>= ?current-date ?rdate)]
       (not [?message :qmessage/blocked true])]
     snapshot (java.util.Date.))))
 
@@ -47,7 +47,7 @@
       [?message :qmessage/status :qmessage-status/unprocessed]
       [?message :qmessage/qcommand ?command]
       [?message :qmessage/execution-date ?ex-date]
-      [(.after ^java.util.Date ?ex-date ?current-date)]
+      [(>= ?ex-date ?current-date)]
       (not [?message :qmessage/blocked true])]
     snapshot command (java.util.Date.))))
 
