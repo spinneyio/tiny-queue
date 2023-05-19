@@ -15,7 +15,7 @@
               (not [?message :qmessage/processed-at])
               (not [?message :qmessage/blocked true])
               [?message :qmessage/started-processing-at ?start]
-              [(.after ^java.util.Date ?minimum-start ?start)]]
+              [(>= ?minimum-start ?start)]]
             database minimum-start))))
 
 (defn fix-limbo-transaction [job fail-time processor-uuid time-increment]
