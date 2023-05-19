@@ -5,7 +5,7 @@ A Clojure library that implements message queue with Datomic. <br> <br>
 
 Leiningen coordinates:
 ```clojure
-[io.spinney/tiny-queue "1.0.12"]
+[io.spinney/tiny-queue "1.0.13"]
 ```
 
 ## Usage
