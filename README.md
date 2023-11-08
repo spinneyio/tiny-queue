@@ -1,18 +1,18 @@
-# tiny-queue 
+# tiny-queue
 A Clojure library that implements message queue with Datomic. <br> <br>
 [![Build Status](https://app.travis-ci.com/spinneyio/tiny-queue.svg?branch=master)](https://app.travis-ci.com/spinneyio/tiny-queue)
 ## Installation
 
 Leiningen coordinates:
 ```clojure
-[io.spinney/tiny-queue "1.0.13"]
+[io.spinney/tiny-queue "1.0.14"]
 ```
 
 ## Usage
 
-The library provides `wrap-background-job` function, which can be used to start the message queue. 
+The library provides `wrap-background-job` function, which can be used to start the message queue.
 This function requires your configuration in the form:
-```clojure 
+```clojure
  {:tiny-queue-db-conn datomic-db-connection
   :q d/q
   :db d/db
@@ -34,10 +34,10 @@ It should be a map with db idents as keys and functions as values. Each function
 
 To start message queue You should do following steps:
 1. Create `config`:
-```clojure 
+```clojure
 (require '[datomic.api :as d])
 (def conn (d/connect "your-datomic-db-uri"))
-(def config 
+(def config
   {:tiny-queue-db-conn conn
    :q d/q
    :db d/db
