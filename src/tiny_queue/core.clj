@@ -27,7 +27,7 @@
     (:qmessage/data job)))
 
 (defn get-new-job
-  [{:keys [command data object date periodic blocked]}]
+  [{:keys [command data object date periodic blocked maximum-retry-count]}]
   (let [job {:qmessage/qcommand command
              :qmessage/data (if (string? data) data (prn-str data))
              :qmessage/status :qmessage-status/unprocessed
@@ -35,7 +35,8 @@
     (-> job
         (cond-> periodic (assoc :qmessage/periodic periodic))
         (cond-> blocked (assoc :qmessage/blocked blocked))
-        (cond-> object (assoc :qmessage/object-uuid object)))))
+        (cond-> object (assoc :qmessage/object-uuid object))
+        (cond-> maximum-retry-count (assoc :qmessage/maximum-retry-count maximum-retry-count)))))
 
 (defn get-new-job-transaction [job-params]
   [(get-new-job job-params)])
@@ -107,7 +108,7 @@
            (dec retry-count))))))))
 
 (defn process-job
-  "A job is a function that does not perform any transactions. Instead, 
+  "A job is a function that does not perform any transactions. Instead,
    it returns a transaction to be performed. This limitation is intentional."
   [config tiny-queue-db-snapshot job]
   (let [{:keys [tiny-queue-db-conn

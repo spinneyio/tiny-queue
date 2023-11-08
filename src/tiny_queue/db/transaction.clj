@@ -3,15 +3,18 @@
 
 (defn fail-transaction [job processor-id fail-time result time-increment]
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
+        new-backoff-factor (+ 1 backoff-factor)
+        permanently-failed (some-> job :qmessage/maximum-retry-count (< new-backoff-factor))
+        failed-status (if permanently-failed :qmessage-status/permanently-failed :qmessage-status/failed)
         retry-date (u/get-retry-date fail-time time-increment backoff-factor)
         id (:db/id job)]
     [[:db/cas id :qmessage/success nil false]
      [:db/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
      [:db/cas id :qmessage/processor-uuid processor-id processor-id]
      [:db/cas id :qmessage/result nil (u/result->string result)]
-     [:db/add id :qmessage/exponential-backoff-factor (+ 1 backoff-factor)]
+     [:db/add id :qmessage/exponential-backoff-factor new-backoff-factor]
      [:db/add id :qmessage/retry-date retry-date]
-     [:db/add id :qmessage/status :qmessage-status/failed]]))
+     [:db/add id :qmessage/status failed-status]]))
 
 (defn grab-unprocessed-job-transaction [job processor-uuid start-time]
   (let [id (:db/id job)]
@@ -22,9 +25,9 @@
 (defn grab-failed-job-transaction [job processor-uuid start-time]
   (let [id (:db/id job)
         orig-uuid (:qmessage/processor-uuid job)
-        orig-time (-> job 
-                      :qmessage/started-processing-at 
-                      u/to-database-date) 
+        orig-time (-> job
+                      :qmessage/started-processing-at
+                      u/to-database-date)
         orig-processed (:qmessage/processed-at job)
         orig-result (:qmessage/result job)
         orig-retry  (:qmessage/retry-date job)]
