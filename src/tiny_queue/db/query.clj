@@ -14,7 +14,7 @@
     snapshot (java.util.Date.))))
 
 (defn get-single-failed-job
-  [config snapshot] 
+  [config snapshot]
   (ffirst
    ((:q config)
     '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
@@ -80,6 +80,18 @@
        ((:q config)
         '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
           :where [?message :qmessage/status :qmessage-status/failed]
+          [?message :qmessage/started-processing-at]
+          [?message :qmessage/processed-at]
+          [?message :qmessage/processor-uuid]
+          [?message :qmessage/success false]]
+        snapshot)))
+
+(defn get-permanently-failed-jobs
+  [config snapshot]
+  (map first
+       ((:q config)
+        '[:find (pull ?message [:* {:qmessage/qcommand [:db/ident]}])
+          :where [?message :qmessage/status :qmessage-status/permanently-failed]
           [?message :qmessage/started-processing-at]
           [?message :qmessage/processed-at]
           [?message :qmessage/processor-uuid]

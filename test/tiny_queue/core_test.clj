@@ -1,7 +1,8 @@
 (ns tiny-queue.core-test
-  (:require [clojure.test :refer [deftest testing is use-fixtures]]
-            [datomic.api :as d]
+  (:require [clj-time.coerce :as c]
             [clj-time.core :as time]
+            [clojure.test :refer [deftest is testing use-fixtures]]
+            [datomic.api :as d]
             [tiny-queue.core :as tq]
             [tiny-queue.db.query :as tq-query]
             [tiny-queue.db.transaction :as tq-transaction]
@@ -37,12 +38,12 @@
 
 (use-fixtures :each setup-test-environment)
 
-(deftest grab-process-job 
+(deftest grab-process-job
   (let [conn (d/connect datomic-uri)
         processors {:qcommand/job job-processor}
         config (-> conn
                    get-default-test-config
-                   (assoc :tiny-queue-processors processors))] 
+                   (assoc :tiny-queue-processors processors))]
     (testing "Add first job"
       (let [five-minutes-before (-> (time/now)
                                     (time/minus (time/minutes 5))
@@ -52,18 +53,18 @@
          {:command :qcommand/job
           :data {:sample "sample-data"}
           :date five-minutes-before})))
-    
+
     (testing "Grab job"
       (let [db-with-job (d/db conn)
             job (tq-query/get-single-unprocessed-job config db-with-job)
             grab-result (tq/grab-job config job)]
         (is grab-result)))
-    
+
     (testing "Check db with grabbed job"
       (let [db-with-grabbed-job (d/db conn)]
         (is (nil? (tq-query/get-single-unprocessed-job config db-with-grabbed-job)))
         (is (tq-query/get-single-status-job config db-with-grabbed-job :qmessage-status/pending))))
-    
+
     (testing "Process job"
       (let [db-with-grabbed-job (d/db conn)
             grabbed-job (tq-query/get-single-status-job
@@ -71,10 +72,10 @@
                          db-with-grabbed-job
                          :qmessage-status/pending)]
        (tq/process-job
-        config 
+        config
         db-with-grabbed-job
         grabbed-job)))
-    
+
     (testing "Check db with completed job"
       (let [db-with-completed-job (d/db conn)]
         (is (nil? (tq-query/get-single-unprocessed-job config db-with-completed-job)))
@@ -152,7 +153,10 @@
 
 (deftest unsuccessful-job-processing
   (let [conn (d/connect datomic-uri)
-        config (get-default-test-config conn)]
+        config (get-default-test-config conn)
+        n-minutes-before #(-> (time/now)
+                              (time/minus (time/minutes %))
+                              u/to-database-date)]
     (testing "Check empty db"
       (let [empty-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config empty-db))))
@@ -162,14 +166,12 @@
         (is (nil? (tq-query/get-single-failed-job config empty-db)))))
 
     (testing "Add first job"
-      (let [five-minutes-before (-> (time/now)
-                                    (time/minus (time/minutes 5))
-                                    u/to-database-date)]
-        (tq/create-new-job
-         config
-         {:command :qcommand/job
-          :data {:sample "sample-data"}
-          :date five-minutes-before})))
+      (tq/create-new-job
+       config
+       {:command :qcommand/job
+        :retry-count 1
+        :data {:sample "sample-data"}
+        :date (n-minutes-before 15)}))
 
     (testing "Check db with first unprocessed job"
       (let [db-with-job (d/db conn)
@@ -187,7 +189,7 @@
             grab-job-transaction (tq-transaction/grab-unprocessed-job-transaction
                                   first-job
                                   (:processor-uuid config)
-                                  (time/now))]
+                                  (n-minutes-before 12))]
         @(d/transact conn grab-job-transaction)
         ;; Job can't be grabbed twice!
         (is (thrown? Exception @(d/transact conn grab-job-transaction)))))
@@ -196,7 +198,8 @@
       (let [grabbed-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config grabbed-db))))
         (is (= 0 (count (tq-query/get-failed-jobs config grabbed-db))))
-        (is (= 1 (count (tq-query/get-processing-jobs config grabbed-db))))))
+        (is (= 1 (count (tq-query/get-processing-jobs config grabbed-db))))
+        (is (= 0 (count (tq-query/get-permanently-failed-jobs config grabbed-db))))))
 
     (testing "Complete processing job with fail transaction"
       (let [grabbed-db (d/db conn)
@@ -207,7 +210,7 @@
             fail-transaction (tq-transaction/fail-transaction
                               grabbed-job
                               (:processor-uuid config)
-                              (time/now)
+                              (c/from-date (n-minutes-before 9))
                               {:success "NO"}
                               0)]
         @(d/transact conn fail-transaction)))
@@ -217,9 +220,11 @@
         (is (= 0 (count (tq-query/get-unprocessed-jobs config failure-db))))
         (is (= 1 (count (tq-query/get-failed-jobs config failure-db))))
         (is (= 0 (count (tq-query/get-processing-jobs config failure-db))))
+        (is (= 0 (count (tq-query/get-permanently-failed-jobs config failure-db))))
         (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/pending)))
         (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/succeeded)))
-        (is (tq-query/get-single-status-job config failure-db :qmessage-status/failed))))
+        (is (tq-query/get-single-status-job config failure-db :qmessage-status/failed))
+        (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/permanently-failed)))))
 
     (testing "Try to grab failed job"
       (let [failure-db (d/db conn)
@@ -227,11 +232,37 @@
             grab-failed-job-transaction (tq-transaction/grab-failed-job-transaction
                                          failed-transaction
                                          (:processor-uuid config)
-                                         (time/now))]
+                                         (n-minutes-before 6))]
         @(d/transact conn grab-failed-job-transaction)))
 
     (testing "Check db with grabbed job"
       (let [failure-grabbed-db (d/db conn)]
         (is (= 0 (count (tq-query/get-unprocessed-jobs config  failure-grabbed-db))))
         (is (= 0 (count (tq-query/get-failed-jobs config failure-grabbed-db))))
-        (is (= 1 (count (tq-query/get-processing-jobs config failure-grabbed-db))))))))
+        (is (= 1 (count (tq-query/get-processing-jobs config failure-grabbed-db))))
+        (is (= 0 (count (tq-query/get-permanently-failed-jobs config failure-grabbed-db))))))
+
+    (testing "Complete processing job with fail transaction, again"
+      (let [grabbed-db (d/db conn)
+            grabbed-job (tq-query/get-single-status-job
+                         config
+                         grabbed-db
+                         :qmessage-status/pending)
+            fail-transaction (tq-transaction/fail-transaction
+                              grabbed-job
+                              (:processor-uuid config)
+                              (c/from-date (n-minutes-before 3))
+                              {:success "NO"}
+                              0)]
+        @(d/transact conn fail-transaction)))
+
+    (testing "Check db with permanently failed job"
+      (let [failure-db (d/db conn)]
+        (is (= 0 (count (tq-query/get-unprocessed-jobs config failure-db))))
+        (is (= 0 (count (tq-query/get-failed-jobs config failure-db))))
+        (is (= 0 (count (tq-query/get-processing-jobs config failure-db))))
+        (is (= 1 (count (tq-query/get-permanently-failed-jobs config failure-db))))
+        (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/pending)))
+        (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/succeeded)))
+        (is (nil? (tq-query/get-single-status-job config failure-db :qmessage-status/failed)))
+        (is (tq-query/get-single-status-job config failure-db :qmessage-status/permanently-failed))))))

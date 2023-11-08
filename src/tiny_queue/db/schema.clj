@@ -3,6 +3,8 @@
 (def qmessage-schema
   [{:db/ident              :qmessage-status/transaction-failed
     :db/doc                "The qmessage status"}
+   {:db/ident              :qmessage-status/permanently-failed
+    :db/doc                "The qmessage status"}
    {:db/ident              :qmessage-status/failed
     :db/doc                "The qmessage status"}
    {:db/ident              :qmessage-status/succeeded
@@ -36,7 +38,7 @@
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true
     :db/doc                "Object involved"}
-   
+
    {:db/ident              :qmessage/object-id
     :db/valueType          :db.type/long
     :db/cardinality        :db.cardinality/one
@@ -84,6 +86,12 @@
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true
     :db/doc                "Used to compute how long should we wait before the retry"}
+
+   {:db/ident              :qmessage/retry-count
+    :db/valueType          :db.type/long
+    :db/cardinality        :db.cardinality/one
+    :db/noHistory          true
+    :db/doc                "How many times should the job be retried after failure (if not present, there is no limit on retries)"}
 
    {:db/ident              :qmessage/retry-date
     :db/valueType          :db.type/instant

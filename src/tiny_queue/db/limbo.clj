@@ -20,6 +20,9 @@
 
 (defn fix-limbo-transaction [job fail-time processor-uuid time-increment]
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
+        new-backoff-factor (+ 1 backoff-factor)
+        permanently-failed (some-> job :qmessage/retry-count (< new-backoff-factor))
+        failed-status (if permanently-failed :qmessage-status/permanently-failed :qmessage-status/failed)
         retry-date (u/get-retry-date fail-time time-increment backoff-factor)
         id (:db/id job)
         orig-uuid (:qmessage/processor-uuid job)]
@@ -27,6 +30,6 @@
      [:db/cas id :qmessage/processed-at nil (u/to-database-date fail-time)]
      [:db/cas id :qmessage/processor-uuid orig-uuid processor-uuid]
      [:db/cas id :qmessage/result nil "Job failed - limbo."]
-     [:db/add    id :qmessage/exponential-backoff-factor (+ 1 backoff-factor)]
+     [:db/add    id :qmessage/exponential-backoff-factor new-backoff-factor]
      [:db/add    id :qmessage/retry-date retry-date]
-     [:db/add    id :qmessage/status :qmessage-status/failed]]))
+     [:db/add    id :qmessage/status failed-status]]))
