@@ -27,7 +27,7 @@
     (:qmessage/data job)))
 
 (defn get-new-job
-  [{:keys [command data object date periodic blocked retry-count]}]
+  [{:keys [command data object date periodic blocked maximum-retry-count]}]
   (let [job {:qmessage/qcommand command
              :qmessage/data (if (string? data) data (prn-str data))
              :qmessage/status :qmessage-status/unprocessed
@@ -36,7 +36,7 @@
         (cond-> periodic (assoc :qmessage/periodic periodic))
         (cond-> blocked (assoc :qmessage/blocked blocked))
         (cond-> object (assoc :qmessage/object-uuid object))
-        (cond-> retry-count (assoc :qmessage/retry-count retry-count)))))
+        (cond-> maximum-retry-count (assoc :qmessage/maximum-retry-count maximum-retry-count)))))
 
 (defn get-new-job-transaction [job-params]
   [(get-new-job job-params)])

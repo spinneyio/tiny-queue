@@ -87,7 +87,7 @@
     :db/noHistory          true
     :db/doc                "Used to compute how long should we wait before the retry"}
 
-   {:db/ident              :qmessage/retry-count
+   {:db/ident              :qmessage/maximum-retry-count
     :db/valueType          :db.type/long
     :db/cardinality        :db.cardinality/one
     :db/noHistory          true

@@ -169,7 +169,7 @@
       (tq/create-new-job
        config
        {:command :qcommand/job
-        :retry-count 1
+        :maximum-retry-count 1
         :data {:sample "sample-data"}
         :date (n-minutes-before 15)}))
 

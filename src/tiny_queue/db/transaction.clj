@@ -4,7 +4,7 @@
 (defn fail-transaction [job processor-id fail-time result time-increment]
   (let [backoff-factor (or (:qmessage/exponential-backoff-factor job) 0)
         new-backoff-factor (+ 1 backoff-factor)
-        permanently-failed (some-> job :qmessage/retry-count (< new-backoff-factor))
+        permanently-failed (some-> job :qmessage/maximum-retry-count (< new-backoff-factor))
         failed-status (if permanently-failed :qmessage-status/permanently-failed :qmessage-status/failed)
         retry-date (u/get-retry-date fail-time time-increment backoff-factor)
         id (:db/id job)]
