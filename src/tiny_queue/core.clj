@@ -117,16 +117,16 @@
                 job-processor-failed-interval-in-s
                 tiny-queue-processors
                 transact]} config
-        processor (-> job
+        processor-id (-> job
                       :qmessage/qcommand
-                      :db/ident
-                      tiny-queue-processors)]
-    (assert processor "No processor found!")
-    (try
-      (let [tiny-queue-db-transaction (processor
-                                       tiny-queue-db-snapshot
-                                       job
-                                       processor-uuid)
+                      :db/ident)
+        processor (processor-id tiny-queue-processors)]
+    (try      
+      (assert processor "No processor found for command: " processor-id)
+      (let [tiny-queue-db-transaction (u/with-timeout 60000 (processor
+                                                             tiny-queue-db-snapshot
+                                                             job
+                                                             processor-uuid))
             success-transaction (db-transaction/success-transaction
                                  job
                                  processor-uuid
