@@ -36,4 +36,5 @@
         (catch java.util.concurrent.TimeoutException x# 
           (do
             (future-cancel future#)
+            (throw x#)
             nil)))))
