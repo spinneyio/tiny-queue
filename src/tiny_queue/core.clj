@@ -122,7 +122,7 @@
                       :db/ident)
         processor (processor-id tiny-queue-processors)]
     (try      
-      (assert processor "No processor found for command: " processor-id)
+      (assert processor (str "No processor found for command: " processor-id))
       (let [tiny-queue-db-transaction (u/with-timeout 60000 (processor
                                                              tiny-queue-db-snapshot
                                                              job
