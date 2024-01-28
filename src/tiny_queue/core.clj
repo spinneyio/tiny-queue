@@ -166,7 +166,7 @@
   "A version of grab-process-job that throws if a job cannot be grabbed or ends with an exception."
   [config tiny-queue-db-snapshot job]
   (assert (grab-job config job) (str "Cannot grab the job: " job))
-  (process-job config tiny-queue-db-snapshot job true))
+  (process-job (dissoc config :log) tiny-queue-db-snapshot job true))
 
 (defn wrap-background-job
   [config ^Long remaining-time]
