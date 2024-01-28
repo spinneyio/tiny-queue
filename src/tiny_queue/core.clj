@@ -84,28 +84,17 @@
    (try-transact config job processor-uuid transaction 3))
   ([config job processor-uuid transaction retry-count]
    (let [{:keys [tiny-queue-db-conn transact log]} config]
-    (if (= retry-count 0)
-      (transact
-       tiny-queue-db-conn
-       (db-transaction/transaction-fail-transaction
-        job
-        processor-uuid
-        (time/now)
-        transaction))
-      (try
-        (transact tiny-queue-db-conn transaction)
-        (catch Throwable e
-          (log {:job job
-                :processor-uuid processor-uuid
-                :exception e
-                :status :process/transaction-fail
-                :retry-count retry-count})
+    (try
+      (transact tiny-queue-db-conn transaction)
+      (catch Throwable e
+        (if (> retry-count 0)
           (try-transact
            config
            job
            processor-uuid
            transaction
-           (dec retry-count))))))))
+           (dec retry-count))
+          (throw e)))))))
 
 (defn process-job
   "A job is a function that does not perform any transactions to tiny queue db. Instead,
