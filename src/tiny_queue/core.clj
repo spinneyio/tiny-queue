@@ -108,56 +108,65 @@
            (dec retry-count))))))))
 
 (defn process-job
-  "A job is a function that does not perform any transactions. Instead,
+  "A job is a function that does not perform any transactions to tiny queue db. Instead,
    it returns a transaction to be performed. This limitation is intentional."
-  [config tiny-queue-db-snapshot job]
-  (let [{:keys [tiny-queue-db-conn
-                processor-uuid
-                log
-                job-processor-failed-interval-in-s
-                tiny-queue-processors
-                transact]} config
-        processor-id (-> job
-                      :qmessage/qcommand
-                      :db/ident)
-        processor (processor-id tiny-queue-processors)]
-    (try      
-      (assert processor (str "No processor found for command: " processor-id))
-      (let [tiny-queue-db-transaction (u/with-timeout 60000 (processor
-                                                             tiny-queue-db-snapshot
-                                                             job
-                                                             processor-uuid))
-            success-transaction (db-transaction/success-transaction
-                                 job
-                                 processor-uuid
-                                 (time/now)
-                                 "OK")
-            final-transaction (concat
-                               tiny-queue-db-transaction
-                               success-transaction)]
-        (try-transact config job processor-uuid final-transaction))
-      (when log
-        (log {:job job
-              :processor-uuid processor-uuid
-              :status :process/success}))
-      (catch Throwable e
-        (when log
-          (log {:job job
-                :processor-uuid processor-uuid
-                :exception e
-                :status :process/fail}))
-        (transact
-         tiny-queue-db-conn
-         (db-transaction/fail-transaction
-          job
-          processor-uuid
-          (time/now)
-          (u/exception-description e)
-          job-processor-failed-interval-in-s))))))
+  ([config tiny-queue-db-snapshot job]
+   (process-job config tiny-queue-db-snapshot job false))
+  ([config tiny-queue-db-snapshot job testing?]
+   (let [{:keys [tiny-queue-db-conn
+                 processor-uuid
+                 log
+                 job-processor-failed-interval-in-s
+                 tiny-queue-processors
+                 transact]} config
+         processor-id (-> job
+                          :qmessage/qcommand
+                          :db/ident)
+         processor (processor-id tiny-queue-processors)]
+     (try      
+       (assert processor (str "No processor found for command: " processor-id))
+       (let [tiny-queue-db-transaction (u/with-timeout 60000 (processor
+                                                              tiny-queue-db-snapshot
+                                                              job
+                                                              processor-uuid))
+             success-transaction (db-transaction/success-transaction
+                                  job
+                                  processor-uuid
+                                  (time/now)
+                                  "OK")
+             final-transaction (concat
+                                tiny-queue-db-transaction
+                                success-transaction)]
+         (try-transact config job processor-uuid final-transaction))
+       (when log
+         (log {:job job
+               :processor-uuid processor-uuid
+               :status :process/success}))
+       (catch Throwable e
+         (when log
+           (log {:job job
+                 :processor-uuid processor-uuid
+                 :exception e
+                 :status :process/fail}))
+         (transact
+          tiny-queue-db-conn
+          (db-transaction/fail-transaction
+           job
+           processor-uuid
+           (time/now)
+           (u/exception-description e)
+           job-processor-failed-interval-in-s))
+         (when testing? (throw e)))))))
 
 (defn grab-process-job [config tiny-queue-db-snapshot job]
   (when (grab-job config job)
     (process-job config tiny-queue-db-snapshot job)))
+
+(defn test-grab-process-job 
+  "A version of grab-process-job that throws if a job cannot be grabbed or ends with an exception."
+  [config tiny-queue-db-snapshot job]
+  (assert (grab-job config job) (str "Cannot grab the job: " job))
+  (process-job config tiny-queue-db-snapshot job true))
 
 (defn wrap-background-job
   [config ^Long remaining-time]
